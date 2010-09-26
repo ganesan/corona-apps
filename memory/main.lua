@@ -27,9 +27,16 @@ math.randomseed( seed )
 
 display.setStatusBar( display.HiddenStatusBar )
 
+function values(t) 
+	local i = 0 
+	return function () i = i + 1; return t[i] end
+end
+
 -- Background
 local halfW = display.viewableContentWidth / 2
 local halfH = display.viewableContentHeight / 2
+
+local viewableWidth = display.viewableContentWidth*0.9
 
 local backgroundPortrait = display.newImage( "backgroundPortrait.png", 0, 0 )
 --local backgroundLandscape = display.newImage( "aquariumbackgroundIPhoneLandscape.jpg", -80, 80 )
@@ -97,6 +104,7 @@ local resetGame = function()
 	game.lastCount = nil
 	game.score = 0
 	game.bestScore = 0
+	game.numStrikes = 0
 	game.curLocations = {}
 	game.nextIndex = nil
 end
@@ -126,7 +134,11 @@ local displayScore = function()
 		size = 20,
 		align = "center"
 	}
-	gui.score = display.newText( "0", 115, 105, "ArialRoundedMTBold", 140 )
+	local font_size = 140
+	if game.points > 1000 then
+		font_size = 100
+	end
+	gui.score = display.newText( "0", 115, 105, "ArialRoundedMTBold", font_size )
 	gui.score:setTextColor( tc[1], tc[2], tc[3] )
 	function gui.score:timer( event )
 		local score = event.count * 10
@@ -150,6 +162,7 @@ local calculateAndDisplayAge = function()
 		size = 20,
 		align = "center"
 	}
+	
 	gui.age = display.newText( "0", 115, 105, "ArialRoundedMTBold", 160 )
 	gui.age:setTextColor( 200, 200, 200 )
 	function gui.age:timer( event )
@@ -165,11 +178,13 @@ local calculateAndDisplayAge = function()
 end
 
 local startNewIteration = function(newCount)
-	if newCount == game.bestScore then
+	if game.numStrikes >= 3 then
 		timer.performWithDelay(1000, clearCurrentIteration)
 		displayScore()
 		return
 	end
+	--if newCount == game.bestScore then	
+	--end
 	game.bestScore = math.max(game.bestScore,game.curCount)
 	game.lastCount = game.curCount
 	game.curCount = newCount
@@ -216,6 +231,7 @@ local circleTouchedListener = function( event )
 			-- add the points
 			local points = display.newText( pointsTable[game.curCount], g.x-20, g.y-30, native.systemFont, 30 )
 			game.points = game.points + pointsTable[game.curCount]
+			gui.scoreText.text = game.points
 			points:setTextColor(255,255,255)
 
 			transition.to(points, {time=500, alpha=0, y=g.y-150, onComplete=function(event) points:removeSelf() end})
@@ -226,6 +242,7 @@ local circleTouchedListener = function( event )
 			
 		else
 			audio.playBomb()
+			game.numStrikes = game.numStrikes + 1
 			local c = config.incorrectTextColor
 			text:setTextColor(c[2],c[2],c[3] )
 			showNumbers()
@@ -260,18 +277,19 @@ local hideNumbers = function(event)
 end
 
 drawNewIteration = function( event )
-	local xpad = display.viewableContentWidth*0.07
-	local ypad = display.viewableContentHeight*0.07
+	local xpad = display.viewableContentWidth*0.1
+	local ypad = display.viewableContentHeight*0.1
 	local w = display.viewableContentWidth - 2*xpad
 	local h = display.viewableContentHeight - 2*ypad
+	local overlap = 30
 	clearCurrentIteration()
 	
 	local spaceIsFree = function(num,x,y)
-		for _,v in pairs(game.curLocations) do
+		for v in values(game.curLocations) do
 			if v.num == num then
 				return false
 			end
-			if ((x > (v.x - 25)) and (x < (v.x + 25))) or ((y > (v.y-25)) and (y < (v.y + 25))) then
+			if ((x > (v.x - overlap)) and (x < (v.x + overlap))) or ((y > (v.y-overlap)) and (y < (v.y + overlap))) then
 				return false
 			end
 		end
@@ -326,6 +344,7 @@ countDown = function( event )
 	else
 		drawNewIteration()
 		countDownText.isVisible = false
+		gui.scoreText.isVisible = true
 	end
 end
 
@@ -395,11 +414,17 @@ gui.playAgainButton = ui.newButton{
 	emboss = true
 }
 
+gui.scoreText = display.newText( "0", display.viewableContentWidth * 0.92, 0, "Helvetica Bold", 18 )
+gui.scoreText:setTextColor(255,179,192)
+gui.scoreText.isVisible = false
+
 gui.gameText = multiline_text.autoWrappedText(
 	"You will have a second to view and memorize the locations of the numbers.\n \nTouch the locations in ascending order.", 
-	"Helvetica", 20, config.scoreTextColor, 300)
+	"Helvetica", 20, config.scoreTextColor, viewableWidth)
+print(viewableWidth)
+print(display.viewableContentWidth * 0.5)
 
-gui.gameText.x = 160
+gui.gameText.x = halfW
 gui.gameText.y = 150
 
 --button1.x = 160
@@ -407,8 +432,14 @@ gui.gameText.y = 150
 --button2.x = 160
 --button2.y = -100
 
-gui.startButton.x = 160; gui.startButton.y = 350
-gui.playAgainButton.x = 160; gui.playAgainButton.y = 350
+gui.startButton.x = halfW; gui.startButton.y = 350
+gui.playAgainButton.x = halfW; gui.playAgainButton.y = 350
+
+for btn in values({gui.startButton, gui.playAgainButton}) do
+	if btn.width > viewableWidth then
+		btn:scale(0.8,0.8)
+	end
+end
 
 countDownText.isVisible = false
 gui.playAgainButton.isVisible = false

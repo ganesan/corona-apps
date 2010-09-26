@@ -31,10 +31,10 @@ display.setStatusBar( display.HiddenStatusBar )
 local halfW = display.viewableContentWidth / 2
 local halfH = display.viewableContentHeight / 2
 
---local backgroundPortrait = display.newImage( "aquariumbackgroundIPhone.jpg", 0, 0 )
+local backgroundPortrait = display.newImage( "backgroundPortrait.png", 0, 0 )
 --local backgroundLandscape = display.newImage( "aquariumbackgroundIPhoneLandscape.jpg", -80, 80 )
---backgroundLandscape.isVisible = false
---local background = backgroundPortrait
+--backgroundLandscape.isVisible = 
+local background = backgroundPortrait
 
 local audio = {}
 if isAndroid then
@@ -45,6 +45,9 @@ else
 	audio.beep = media.newEventSound( "beep_caf.caf" )
 	audio.bomb = media.newEventSound( "bomb_caf.caf" )
 	audio.count = media.newEventSound( "short_low_high.caf" )
+	audio.three = media.newEventSound("Mamacita_Three.caf")
+	audio.two = media.newEventSound("Mamacita_Two.caf")
+	audio.one = media.newEventSound("Mamacita_One.caf")
 end
 
 audio.playBeep = function()
@@ -53,16 +56,33 @@ end
 audio.playBomb = function()
 	media.playEventSound( audio.bomb )
 end
-audio.playCount = function()
+audio.playCountBeep = function()
 	media.playEventSound( audio.count )
+end
+audio.playCount = function(num)
+	if num == 3 then
+		media.playEventSound(audio.three)
+	elseif num == 2 then
+		media.playEventSound(audio.two)
+	elseif num == 1 then
+		media.playEventSound(audio.one)
+	end
 end
 
 local gui = {}
 
-local config = {}
+local config = {
+	circleSize = 20,
+	countDownTextColor = {255, 204, 102, 255},
+	countDownTextSize = 80,
+	correctTextColor = {200,255,200,255},
+	incorrectTextColor = { 200,50,40, 255},
+	--numberTextColor = {255, 204, 102, 255}, -- 255,110,110
+	--numberTextColor = {255,110,110,255},
+	numberTextColor = {250,250,250,255},
+	scoreTextColor = {250,250,250,255}
+}
 local game = {}
-
-config.circleSize = 20
 
 local countDown --- countdown function
 local clearCurrentIteration
@@ -73,6 +93,7 @@ local circleColor = 255,110,110
 
 local resetGame = function()
 	game.curCount = 3
+	game.points = 0
 	game.lastCount = nil
 	game.score = 0
 	game.bestScore = 0
@@ -90,19 +111,37 @@ clearCurrentIteration = function()
 	game.curLocations = {}
 end
 
-local scoreTable = {}
-scoreTable[1] = 92
-scoreTable[2] = 65
-scoreTable[3] = 50
-scoreTable[4] = 40
-scoreTable[5] = 32
-scoreTable[6] = 25
-scoreTable[7] = 23
-scoreTable[8] = 20
-scoreTable[9] = 19
-scoreTable[10] = 18
+local pointsTable = {1,5,10,20,30,40,50,60,70,80}
+local scoreTable = {92,65,50,40,32,25,23,19,18}
+local gemTable = {"darkDiamond.png", "gemGreen.png", "whiteRuby.png", "redTriangle.png", "purpleSaphire.png", 
+	"gemPurple.png", "greenDiamond.png", "redSaphire.png", "greenRuby.png", "greenSaphire.png", "whiteGem.png"}
 
-local calculateScore = function()
+local displayScore = function()
+	local tc = config.scoreTextColor
+	gui.score_desc = ui.newLabel{
+		bounds = { 10, 100, 300, 40 },
+		text = "Your final score is...",
+		font = "Helvetica",
+		textColor = tc,
+		size = 20,
+		align = "center"
+	}
+	gui.score = display.newText( "0", 115, 105, "ArialRoundedMTBold", 140 )
+	gui.score:setTextColor( tc[1], tc[2], tc[3] )
+	function gui.score:timer( event )
+		local score = event.count * 10
+		self.text = score
+		if score >= game.points then
+			self.text = game.points
+			gui.playAgainButton.isVisible = true
+		end
+	end
+	
+	-- Register to call t's timer method 50 times
+	timer.performWithDelay( 50, gui.score, game.points / 10 )
+end
+
+local calculateAndDisplayAge = function()
 	gui.age_desc = ui.newLabel{
 		bounds = { 10, 100, 300, 40 },
 		text = "Your approximate age is...",
@@ -128,7 +167,7 @@ end
 local startNewIteration = function(newCount)
 	if newCount == game.bestScore then
 		timer.performWithDelay(1000, clearCurrentIteration)
-		calculateScore()
+		displayScore()
 		return
 	end
 	game.bestScore = math.max(game.bestScore,game.curCount)
@@ -142,25 +181,53 @@ local startNewIteration = function(newCount)
 	timer.performWithDelay(2000, delayedStart)
 end
 
+local toggleNumber = function(g)
+	local text = g[1]
+	local circle = g[2]
+	local scale = 1.0
+	if circle.isVisible then
+		circle.isVisible = false
+		text.isVisible = true
+	else
+		if circle.width < 100 then
+			scale = 1.0
+		else
+			scale = 0.5
+		end
+		circle.isVisible = true
+		text.isVisible = false
+	end
+	g.xScale = scale
+	g.yScale = scale
+end
+
 local circleTouchedListener = function( event )
 	if "ended" == event.phase then
 		local g = event.target
+		toggleNumber(g)
 		local text = g[1]
 		local circle = g[2]
-		circle.isVisible = false
-		text.isVisible = true
 		if g.num == game.curLocations[game.nextIndex].num then
 			audio.playBeep()
-			circle:setStrokeColor(50,200,60)
-			text:setTextColor( 50,200,60 )
+			local c = config.correctTextColor
+			text:setTextColor( c[1],c[2],c[3] )
 			game.nextIndex = game.nextIndex + 1
+			
+			-- add the points
+			local points = display.newText( pointsTable[game.curCount], g.x-20, g.y-30, native.systemFont, 30 )
+			game.points = game.points + pointsTable[game.curCount]
+			points:setTextColor(255,255,255)
+
+			transition.to(points, {time=500, alpha=0, y=g.y-150, onComplete=function(event) points:removeSelf() end})
+			
 			if game.nextIndex > #game.curLocations then
 				startNewIteration(game.curCount+1)	
-			end
+			end 
+			
 		else
 			audio.playBomb()
-			circle:setStrokeColor(200,50,40)
-			text:setTextColor( 200,50,40 )
+			local c = config.incorrectTextColor
+			text:setTextColor(c[2],c[2],c[3] )
 			showNumbers()
 			startNewIteration(game.curCount-1)
 		end
@@ -169,11 +236,7 @@ end
 
 showNumbers = function(event)
 	for i=1,#game.curLocations do
-		local g = game.curLocations[i]
-		local text = g[1]
-		local circle = g[2]
-		circle.isVisible = false
-		text.isVisible = true
+		toggleNumber(game.curLocations[i])
 	end
 end
 
@@ -181,12 +244,17 @@ local hideNumbers = function(event)
 	for i=1,#game.curLocations do
 		local g = game.curLocations[i]
 		if (g ~= nil) then
-			local text = g[1]
-			local circle = g[2]
-			circle.isVisible = true
-			text.isVisible = false
+			toggleNumber(g)
+			local gem = g[2]
 			game.nextIndex = 1
 			g:addEventListener( "touch", circleTouchedListener )
+			if gem.width < 100 then
+				scale = 1.0
+			else
+				scale = 0.5
+			end
+			g.xScale = scale
+			g.yScale = scale
 		end
 	end
 end
@@ -214,7 +282,7 @@ drawNewIteration = function( event )
 	repeat
 		local x = math.random() * w + xpad
 		local y = math.random() * h + ypad
-		local num = math.random(10)
+		local num = math.random(math.max(10, game.curCount*2))
 		if spaceIsFree(num,x,y) then
 			local group = display.newGroup()
 			group.x = x
@@ -222,15 +290,13 @@ drawNewIteration = function( event )
 			group.num = num
 			local t = display.newText( num, x, y, native.systemFont, 30 )
 			group:insert( t, true )
-			local c = display.newCircle(x, y, config.circleSize)
+			local c = display.newImage(gemTable[game.curCount], x, y)
 			group:insert( c, true )  -- accessed in buttonListener as group[1]
-			c.strokeWidth = 3
-			c:setStrokeColor(255,110,110)
-			c:setFillColor(0,0,0)
 			c.isVisible = false
 			
 			game.curLocations[i] = group
-			t:setTextColor( 255,110,110 )
+			local clr = config.numberTextColor
+			t:setTextColor( clr[1], clr[2], clr[3] )
 			i = i + 1
 		end
 	until i > game.curCount
@@ -245,15 +311,15 @@ local countDownText = ui.newLabel{
 	bounds = { 10, 100, 300, 40 },
 	text = "",
 	font = "AmericanTypewriter",
-	textColor = { 255, 204, 102, 255 },
-	size = 60,
+	textColor = config.countDownTextColor,
+	size = config.countDownTextSize,
 	align = "center"
 }
 
 countDown = function( event )
 	countDownText:setText(tostring(countDownCount))
 	countDownText.isVisible = true
-	audio.playCount()
+	audio.playCount(countDownCount)
 	countDownCount = countDownCount - 1
 	if countDownCount >= 0 then
 		timer.performWithDelay(1000, countDown)
@@ -264,15 +330,10 @@ countDown = function( event )
 end
 
 local startButtonRelease = function( event )
-	--gui.startButton:removeSelf()
-	--gui.gameText:removeSelf()
 	resetGame()
 	for _,v in pairs(gui) do
 		v.isVisible = false
 	end
-	--gui.startButton.isVisible = false
-	--gui.gameText.isVisible = false
-	--gui.playAgainButton.isVisible = false
 	countDownCount = 3	
 	countDown()
 end
@@ -336,7 +397,7 @@ gui.playAgainButton = ui.newButton{
 
 gui.gameText = multiline_text.autoWrappedText(
 	"You will have a second to view and memorize the locations of the numbers.\n \nTouch the locations in ascending order.", 
-	"Helvetica", 20, { 200,200,200, 255 }, 300)
+	"Helvetica", 20, config.scoreTextColor, 300)
 
 gui.gameText.x = 160
 gui.gameText.y = 150

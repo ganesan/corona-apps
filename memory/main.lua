@@ -38,10 +38,10 @@ local halfH = display.viewableContentHeight / 2
 
 local viewableWidth = display.viewableContentWidth*0.9
 
-local backgroundPortrait = display.newImage( "backgroundPortrait.png", 0, 0 )
+--local backgroundPortrait = display.newImage( "backgroundPortrait.png", 0, 0 )
 --local backgroundLandscape = display.newImage( "aquariumbackgroundIPhoneLandscape.jpg", -80, 80 )
 --backgroundLandscape.isVisible = 
-local background = backgroundPortrait
+--local background = backgroundPortrait
 
 local audio = {}
 if isAndroid then
@@ -339,12 +339,8 @@ countDown = function( event )
 	audio.playCount(countDownCount)
 	countDownCount = countDownCount - 1
 	if countDownCount >= 0 then
-		print("countdownCount case1")
-		print(countDownCount)
 		timer.performWithDelay(1000, countDown)
 	else
-		print("countDownCount case2")
-		print(countDownCount)
 		drawNewIteration()
 		countDownText.isVisible = false
 		gui.scoreText.isVisible = true
@@ -424,8 +420,8 @@ gui.scoreText.isVisible = false
 gui.gameText = multiline_text.autoWrappedText(
 	"You will have a second to view and memorize the locations of the numbers.\n \nTouch the locations in ascending order.", 
 	"Helvetica", 20, config.scoreTextColor, viewableWidth)
-print(viewableWidth)
-print(display.viewableContentWidth * 0.5)
+--print(viewableWidth)
+--print(display.viewableContentWidth * 0.5)
 
 gui.gameText.x = halfW
 gui.gameText.y = 150

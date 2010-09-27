@@ -278,11 +278,12 @@ drawNewIteration = function( event )
 	local ypad = display.viewableContentHeight*0.1
 	local w = display.viewableContentWidth - 2*xpad
 	local h = display.viewableContentHeight - 2*ypad
-	local overlap = 30
+	local overlap = 25
 	clearCurrentIteration()
 	
 	local spaceIsFree = function(num,x,y)
-		for v in values(game.curLocations) do
+		--print("checking "..num.." "..x.." "..y)
+		for _,v in pairs(game.curLocations) do
 			if v.num == num then
 				return false
 			end
@@ -338,8 +339,12 @@ countDown = function( event )
 	audio.playCount(countDownCount)
 	countDownCount = countDownCount - 1
 	if countDownCount >= 0 then
+		print("countdownCount case1")
+		print(countDownCount)
 		timer.performWithDelay(1000, countDown)
 	else
+		print("countDownCount case2")
+		print(countDownCount)
 		drawNewIteration()
 		countDownText.isVisible = false
 		gui.scoreText.isVisible = true

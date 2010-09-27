@@ -52,9 +52,7 @@ else
 	audio.beep = media.newEventSound( "beep_caf.caf" )
 	audio.bomb = media.newEventSound( "bomb_caf.caf" )
 	audio.count = media.newEventSound( "short_low_high.caf" )
-	audio.three = media.newEventSound("Mamacita_Three.caf")
-	audio.two = media.newEventSound("Mamacita_Two.caf")
-	audio.one = media.newEventSound("Mamacita_One.caf")
+	audio.numbers = { media.newEventSound("Mamacita_One.caf"), media.newEventSound("Mamacita_Two.caf"), media.newEventSound("Mamacita_Three.caf") }
 end
 
 audio.playBeep = function()
@@ -67,13 +65,7 @@ audio.playCountBeep = function()
 	media.playEventSound( audio.count )
 end
 audio.playCount = function(num)
-	if num == 3 then
-		media.playEventSound(audio.three)
-	elseif num == 2 then
-		media.playEventSound(audio.two)
-	elseif num == 1 then
-		media.playEventSound(audio.one)
-	end
+	media.playEventSound(audio.numbers[num])
 end
 
 local gui = {}
@@ -126,6 +118,7 @@ local gemTable = {"darkDiamond.png", "gemGreen.png", "whiteRuby.png", "redTriang
 
 local displayScore = function()
 	local tc = config.scoreTextColor
+	gui.strikes.isVisible = false
 	gui.score_desc = ui.newLabel{
 		bounds = { 10, 100, 300, 40 },
 		text = "Your final score is...",
@@ -178,6 +171,7 @@ local calculateAndDisplayAge = function()
 end
 
 local startNewIteration = function(newCount)
+	
 	if game.numStrikes >= 3 then
 		timer.performWithDelay(1000, clearCurrentIteration)
 		displayScore()
@@ -246,6 +240,9 @@ local circleTouchedListener = function( event )
 			local c = config.incorrectTextColor
 			text:setTextColor(c[2],c[2],c[3] )
 			showNumbers()
+			--gui.strikes:one()
+			gui.strikes:strikes(game.numStrikes)
+			gui.strikes.isVisible = true
 			startNewIteration(game.curCount-1)
 		end
 	end
@@ -335,6 +332,7 @@ local countDownText = ui.newLabel{
 }
 
 countDown = function( event )
+	gui.strikes.isVisible = false
 	countDownText:setText(tostring(countDownCount))
 	countDownText.isVisible = true
 	audio.playCount(countDownCount)
@@ -440,6 +438,62 @@ for btn in values({gui.startButton, gui.playAgainButton}) do
 		btn:scale(0.8,0.8)
 	end
 end
+
+-- create the strikes group
+function threeStrikes(params)
+	local scale = 0.2
+	local x1 = display.newImage("red_x_mark.jpg")
+	local x2 = display.newImage("red_x_mark.jpg")
+	local x3 = display.newImage("red_x_mark.jpg")
+	local w = x1.width
+	local h = x1.height
+	print(w.." "..h)
+	x1.y = h/2.0
+	x2.y = h/2.0
+	x3.y = h/2.0
+	grp = display.newGroup()
+	grp:insert(x1)
+	grp:insert(x2)
+	grp:insert(x3)
+	grp.x = display.contentWidth / 2
+	grp.y = display.contentHeight / 2
+	grp:scale(scale,scale)	
+	
+	function grp:one()
+		x1.isVisible = true
+		x2.isVisible = false
+		x3.isVisible = false
+		x1.x = 0
+	end
+	function grp:two()
+		x1.isVisible = true
+		x2.isVisible = true
+		x3.isVisible = false
+		x1.x = -w/2 - 15
+		x2.x = w/2 + 15
+	end
+	function grp:three()
+		x1.isVisible = true
+		x2.isVisible = true
+		x3.isVisible = true
+		x1.x = -1.5*w - 15
+		x2.x = 0
+		x3.x = 1.5*w + 15
+	end
+	function grp:strikes(num)
+		if num == 1 then
+			grp:one()
+		elseif num == 2 then
+			grp:two()
+		elseif num == 3 then
+			grp:three()
+		end
+	end
+	return grp
+end
+
+gui.strikes = threeStrikes()
+gui.strikes.isVisible = false
 
 countDownText.isVisible = false
 gui.playAgainButton.isVisible = false

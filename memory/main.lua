@@ -48,6 +48,7 @@ if isAndroid then
 	audio.beep = media.newEventSound( "beep_mp3.mp3" )
 	audio.bomb = media.newEventSound( "bomb_mp3.mp3" )
 	audio.count = media.newEventSound( "short_low_high.mp3" )
+	audio.numbers = { media.newEventSound("Mamacita_One.mp3"), media.newEventSound("Mamacita_Two.mp3"), media.newEventSound("Mamacita_Three.mp3") }
 else
 	audio.beep = media.newEventSound( "beep_caf.caf" )
 	audio.bomb = media.newEventSound( "bomb_caf.caf" )
@@ -443,9 +444,11 @@ end
 -- create the strikes group
 function threeStrikes(params)
 	local scale = 0.2
-	local x1 = display.newImage("red_x_mark.jpg")
-	local x2 = display.newImage("red_x_mark.jpg")
-	local x3 = display.newImage("red_x_mark.jpg")
+	local xfile = "red_x_mark.jpg"
+	xfile = "600px-Red_x.png"
+	local x1 = display.newImage(xfile)
+	local x2 = display.newImage(xfile)
+	local x3 = display.newImage(xfile)
 	local w = x1.width
 	local h = x1.height
 	print(w.." "..h)

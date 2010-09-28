@@ -38,10 +38,10 @@ local halfH = display.viewableContentHeight / 2
 
 local viewableWidth = display.viewableContentWidth*0.9
 
---local backgroundPortrait = display.newImage( "backgroundPortrait.png", 0, 0 )
+local backgroundPortrait = display.newImage( "backgroundPortrait.png", 0, 0 )
 --local backgroundLandscape = display.newImage( "aquariumbackgroundIPhoneLandscape.jpg", -80, 80 )
 --backgroundLandscape.isVisible = 
---local background = backgroundPortrait
+local background = backgroundPortrait
 
 local audio = {}
 if isAndroid then
